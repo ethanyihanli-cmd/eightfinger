@@ -6,4 +6,6 @@ module com.macondo.eightfinger {
 
     opens com.macondo.eightfinger to javafx.fxml;
     exports com.macondo.eightfinger;
+    exports com.macondo.eightfinger.model;
+
 }
