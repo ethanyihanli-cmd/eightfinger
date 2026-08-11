@@ -1,5 +1,7 @@
 package com.macondo.eightfinger;
 
+import com.macondo.eightfinger.data.SongLibrary;
+import com.macondo.eightfinger.model.Song;
 import com.macondo.eightfinger.model.GameState;
 import com.macondo.eightfinger.model.GameMode;
 import com.macondo.eightfinger.model.Judgement;
@@ -10,12 +12,21 @@ import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 
+import java.util.List;
+
 public class EightFingerGame extends Application {
-    private GameState state = GameState.MENU;
-    private GameMode activeMode = GameMode.NORMAL;
+    private List<Song> songs;
+    private int selectedSongIndex = 0;
 
     @Override
     public void start(Stage primaryStage) {
+        songs = SongLibrary.builtInSongs();
+
+        System.out.println("Loaded songs:");
+        for (int i = 0; i < songs.size(); i++) {
+            System.out.println(" " + (i + 1) + ". " + songs.get(i).getTitle());
+        }
+
         StackPane root = new StackPane();
         root.setStyle("-fx-background-color: #121922;");
 
