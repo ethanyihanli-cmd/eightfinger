@@ -1,6 +1,7 @@
 package com.macondo.eightfinger;
 
-import javafx.applicaiton.Application;
+import com.macondo.eightfinger.model.Song;
+import javafx.application.Application;
 import javafx.scene.Scene;
 import javafx.scene.control.Label;
 import javafx.scene.layout.StackPane;
@@ -15,6 +16,7 @@ public class EightFingerGame extends Application {
 
         Label label = new Label("The 8 Finger Challange");
         label.setStyle("-fx-text-fill: #d8e1ea; -fx-font-size: 36px; -fx-font-weight: bold;");
+        label.setTextAlignment(javafx.scene.text.TextAlignment.CENTER);
 
         root.getChildren().add(label);
 
