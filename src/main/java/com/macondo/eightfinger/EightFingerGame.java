@@ -2,6 +2,9 @@ package com.macondo.eightfinger;
 
 import com.macondo.eightfinger.data.SongLibrary;
 import com.macondo.eightfinger.model.Song;
+import com.macondo.eightfinger.engine.ChartTransformer;
+import com.macondo.eightfinger.model.ChartNote;
+import com.macondo.eightfinger.model.DifficultyProfile;
 import com.macondo.eightfinger.model.GameState;
 import com.macondo.eightfinger.model.GameMode;
 import com.macondo.eightfinger.model.Judgement;
@@ -16,15 +19,18 @@ import java.util.List;
 
 public class EightFingerGame extends Application {
     private List<Song> songs;
-    private int selectedSongIndex = 0;
 
     @Override
     public void start(Stage primaryStage) {
         songs = SongLibrary.builtInSongs();
 
-        System.out.println("Loaded songs:");
-        for (int i = 0; i < songs.size(); i++) {
-            System.out.println(" " + (i + 1) + ". " + songs.get(i).getTitle());
+        Song testSong = songs.get(0);
+        System.out.println("Test" + testSong.getTitle());
+
+        for (int level = 1; level <= 5; level++) {
+            DifficultyProfile profile = DifficultyProfile.forLevel(level);
+            List<ChartNote> transformed = ChartTransformer. forDifficulty(testSong, profile);
+            System.out.println(" Level " + level + ": " + transformed.size() + " notes, " + profile.getKeys().size() + " lanes");
         }
 
         StackPane root = new StackPane();
