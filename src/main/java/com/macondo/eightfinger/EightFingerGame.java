@@ -3,6 +3,7 @@ package com.macondo.eightfinger;
 import com.macondo.eightfinger.data.SongLibrary;
 import com.macondo.eightfinger.model.Song;
 import com.macondo.eightfinger.engine.ChartTransformer;
+import com.macondo.eightfinger.engine.SoundEngine;
 import com.macondo.eightfinger.model.ChartNote;
 import com.macondo.eightfinger.model.DifficultyProfile;
 import com.macondo.eightfinger.model.GameState;
@@ -23,15 +24,10 @@ public class EightFingerGame extends Application {
     @Override
     public void start(Stage primaryStage) {
         songs = SongLibrary.builtInSongs();
+        soundEngine = new SoundEngine();
 
-        Song testSong = songs.get(0);
-        System.out.println("Test" + testSong.getTitle());
-
-        for (int level = 1; level <= 5; level++) {
-            DifficultyProfile profile = DifficultyProfile.forLevel(level);
-            List<ChartNote> transformed = ChartTransformer. forDifficulty(testSong, profile);
-            System.out.println(" Level " + level + ": " + transformed.size() + " notes, " + profile.getKeys().size() + " lanes");
-        }
+        soundEngine.playMenuMove();
+        System.out.println("Test");
 
         StackPane root = new StackPane();
         root.setStyle("-fx-background-color: #121922;");
@@ -46,6 +42,13 @@ public class EightFingerGame extends Application {
         primaryStage.setTitle("The 8 Finger Challange");
         primaryStage.setScene(scene);
         primaryStage.show();
+    }
+
+    @Override
+    public void stop() {
+        if (soundEngine != null) {
+            soundEngine.stopBackingTrack();
+        }
     }
 
 

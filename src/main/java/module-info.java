@@ -9,5 +9,6 @@ module com.macondo.eightfinger {
     exports com.macondo.eightfinger.model;
     exports com.macondo.eightfinger.data;
     exports com.macondo.eightfinger.engine;
+    exports com.macondo.eightfinger.view;
 
 }
