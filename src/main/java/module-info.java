@@ -2,6 +2,7 @@ module com.macondo.eightfinger {
     requires javafx.controls;
     requires javafx.graphics;
     requires javafx.media;
+    requires java.desktop;
 
 
     opens com.macondo.eightfinger to javafx.fxml;
