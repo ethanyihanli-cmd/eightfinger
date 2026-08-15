@@ -459,11 +459,121 @@ public class EightFingerGame extends Application {
     //work later
 
     private void drawBackground(GraphicsContext gc) {
+      GameTheme theme = currentTheme();
 
+      Color top = theme.getBackgroundTop();
+      Color mid = theme.getBackgroundMid();
+      Color bottom = theme.getBackgroundBottom();
+
+      for (int i = 0; i < CANVAS_HEIGHT; i++) {
+          double progress = (double) i / CANVAS_HEIGHT;
+          Color color;
+          if (progress < 0.5) {
+              double t = progress / 0.5;
+              color = top.interpolate(mid, t);
+          } else {
+              double t = (progress - 0.5) / 0.5;
+              color = mid.interpolate(bottom, t);
+          }
+          gc.setFill(color);
+          gc.fillRect(0, i, CANVAS_WIDTH, 1);
+      }
+
+      if (soundEngine.hasActiveVideoBackground()) {
+          double panelX = playfieldWidth() + 18;
+          double panelWidth = CANVAS_WIDTH - panelX - 18;
+          gc.setGlobalAlpha(0.26);
+          gc.setFill(theme.getBackgroundMid());
+          gc.fillRect(playfieldWidth(), 0, CANVAS_WIDTH - playfieldWidth(), CANVAS_HEIGHT);
+          gc.setGlobalAlpha(1);
+
+          gc.setFill(Color.color(0.02, 0.05, 0.08, 0.14));
+          gc.fillRoundRect(panelX, 22, panelWidth, CANVAS_HEIGHT - 44, 28, 28);
+          gc.setStroke(theme.getGlow().deriveColor(0, 1, 1, 0.55));
+          gc.strokeRoundRect(panelX, 22, panelWidth, CANVAS_HEIGHT - 44, 28, 28);
+      }
+
+      gc.setGlobalAlpha(0.18);
+      gc.setFill(theme.getAccent());
+      gc.fillOval(-120, -90, 340, 220);
+      gc.setFill(theme.getGlow());
+      gc.fillOval(CANVAS_WIDTH - 240, 32, 320, 240);
+      gc.setFill(theme.laneColor(3));
+      gc.fillOval(110, CANVAS_HEIGHT - 160, 420, 210);
+      gc.setGlobalAlpha(1);
     }
 
     private void drawMenu(GraphicsContext gc) {
+        GameTheme theme = currentTheme();
+        DifficultyProfile previewProfile = DifficultyProfile.forLevel(selectedDifficulty);
+        GameMode previewMode = GameMode.values()[selectedModeIndex];
 
+        gc.setFill(Color.color(0, 0, 0, 0.18));
+        gc.fillRoundRect(72, 54, CANVAS_WIDTH - 144, CANVAS_HEIGHT - 108, 28, 28);
+
+        gc.setFill(theme.getPanel());
+        gc.fillRoundRect(92, 78, CANVAS_WIDTH - 184, CANVAS_HEIGHT - 144, 28, 28);
+        gc.setStroke(Color.color(1, 1, 1, 0.12));
+        gc.strokeRoundRect(92, 78, CANVAS_WIDTH - 184, CANVAS_HEIGHT - 144, 28, 28;
+
+        gc.setFill(theme.getAccent());
+        gc.setFont(TITLE_FONT);
+        gc.fillText("THE 8 FINGER CHALLENGE", 128, 148);
+
+        gc.setFill(Color.WHITE);
+        gc.setFont(SUBTITLE_FONT);
+        gc.fillText("Use UP/DOWN to move, LEFT/RIGHT to change, ENTER to start", 128, 184);
+
+        double leftPanelX = 122;
+        double leftPanelY = 214;
+        double leftPanelWidth = 430;
+        double rowHeight = 82;
+        double rowGap = 10;
+
+        drawMenuRow(gc, 0, "TRACK", selectedSong.getTitle(),
+                selectedSong.getArtist().isBlank() ? selectedSong.getCaption() : selectedSong.getArtist(),
+                leftPanelX, leftPanelY, leftPanelWidth, rowHeight, theme);
+
+        drawMenuRow(gc, 1, "DIFFICULTY", String.valueOf(selectedDifficulty),
+                "lanes " + previewProfile.getKeys().size() + "    bpm" + (int) selectedSong.getBpm(),
+                leftPanelX, leftPanelY + (rowHeight + rowGap), leftPanelWidth, rowHeight, theme);
+
+        drawMenuRow(gc, 2, "MODE", previewMode.getLabel(),
+                previewMode.getDescription() + "    sound" + (soundEngine.isEnabled() ? "on" : "off"),
+                leftPanelX, leftPanelY + (rowHeight + rowGap) * 2, leftPanelWidth, rowHeight, theme);
+
+        drawMenuRow(gc, 3, "START", "Play",
+                "press ENTER to launch this chart",
+                leftPanelX, leftPanelY + (rowHeight + rowGap) * 3, leftPanelWidth, rowHeight, theme);
+
+        gc.setFont(MENU_FONT);
+        gc.setFill(Color.color(1, 1, 1, 0.75));
+        gc.fillText("S toggle sound", 790, 140);
+        gc.fillText("MP4 lyric video on the right in game", 720, 166);
+
+        drawSongPreview(gc, selectedSong, previewProfile);
+    }
+
+    private void drawMenuRow(GraphicsContext gc, int rowIndex, String label String value, String detail,
+                             double x, double y, double width, double height, GameTheme theme) {
+        boolean selected = menuFieldIndex == rowIndex;
+
+        gc.setFill(selected ? theme.getAccent().deriveColor(0, 1, 1, 0.17) : Color.color(1, 1, 1, 0.05));
+        gc.fillRoundRect(x, y, width, height, 18, 18);
+        gc.setStroke(selected ? theme.getGlow().deriveColor(0, 1, 1, 0.8) : Color.color(1, 1, 1, 0.08));
+        gc.strokeRoundRect(x, y, width, height, 18, 18);
+
+        gc.setFont(PANEL_LABEL_FONT);
+        gc.setFill(selected ? theme.getGlow() : Color.color(1, 1, 1, 0.72));
+        gc.fillText(label, x + 18, y + 24);
+
+        gc.setFont(PANEL_VALUE_FONT);
+        gc.setFill(Color.WHITE);
+        gc.fillText(value, x + 18, y + 54);
+
+        gc.setFont(PANEL_TEXT_FONT);
+        gc.setFill(Color.color(1, 1, 1, 0.78));
+        gc.fillText(detail, x + 18, y + 74);
     }
 
     private void drawLanes(GraphicsContext gc) {
@@ -471,24 +581,143 @@ public class EightFingerGame extends Application {
     }
 
     private void drawHitLine(GraphicsContext gc) {
+        GameTheme theme = currentTheme();
+        double glow = 0.55 + 0.45 * Math.sin(pulseTime * 6);
 
+        gc.setStroke(Color.color(1, 1, 1, 0.18));
+        gc.strokeLine(84, LANE_Y + 10, playfieldWidth() - 84, LANE_Y + 10);
+
+        gc.getStroke(theme.getGlow().deriveColor(0, 1, 1, 0.35 + 0.35 * glow));
+        gc.setLineWidth(8);
+        gc.strokeLine(84, LANE_Y, playfieldWidth() - 84, LANE_Y);
+
+        gc.setStroke(Color.WHITE);
+        gc.setLineWidth(2);
+        gc.strokeLine(84, LANE_Y, playfieldWidth() - 84, LANE_Y);
     }
 
     private void drawNotes(GraphicsContext gc) {
+        for (Note note : notes) {
+            int laneIndex = activeProfile.getKeys().indexOf(note.getKey());
+            if (laneIndex < 0) {
+                continue;
+            }
 
+            double x = laneX(laneIndex);
+            Color laneColor = currentTheme().laneColor(laneIndex);
+
+            if (note.isHold()) {
+                double bodyHeight = Math.max(0, note.getTotalHeight() - 26);
+                gc.setFill(laneColor.deriveColor(0, 1, 1, note.isActiveHold() ? 0.55 : 0.3));
+                gc.fillRoundRect(x + 16, note.getY() + 26 - 4, NOTE_WIDTH - 32, bodyHeight + 8, 12, 12);
+            }
+
+            gc.setFill(laneColor.deriveColor(0, 1, 1.25, 0.18));
+            gc.fillRoundRect(x - 4, note.getY() - 5, NOTE_WIDTH + 8, 26 + 10, 16, 16);
+
+            gc.setFill(laneColor.brighter());
+            gc.fillRoundRect(x, note.getY(), NOTE_WIDTH, 26, 14, 14);
+            gc.setStroke(Color.color(1, 1, 1, 0.42));
+            gc.strokeRoundRect(x, note.getY(), NOTE_WIDTH, 26, 14,14);
+        }
     }
 
     private void drawHud(GraphicsContext gc) {
+        GameTheme theme = currentTheme();
 
+        gc.setFill(theme.getPanel());
+        gc.fillRoundRect(24, 24, 260, 176, 24, 24);
+        gc.setStroke(Color.color(1, 1, 1, 0.12));
+        gc.strokeRoundRect(24, 24, 260, 176, 24, 24);
+
+        gc.setFill(theme.getAccent());
+        gc.setFont(PANEL_LABEL_FONT);
+        gc.fillText(selectedSong.getTitle().toUpperCase(), 42, 48);
+
+        gc.setFill(Color.WHITE);
+        gc.setFont(PANEL_VALUE_FONT);
+        gc.fillText(String.valueOf(score), 42, 84);
+
+        gc.setFont(PANEL_TEXT_FONT);
+        gc.fillText("combo  " + combo, 42, 114);
+        gc.fillText("mode  " + activeMode.getLabel(), 42, 138);
+        gc.fillText("miss  " + misses + "/" + (activeMode == GameMode.PRACTICE ? "INF" : String.valueOf(activeMode.getMissLimit())), 42, 162);
+        gc.fillText(selectedSong.getArtist().isBlank() ? selectedSong.getCaption() : "artist " + selectedSong.getArtist(), 42, 186);
     }
 
     private void drawGameOver(GraphicsContext gc) {
+        GameTheme theme = currentTheme();
 
+        gc.setFill(Color.color(0, 0, 0, 0.58));
+        gc.fillRoundRect(CANVAS_WIDTH / 2 - 186, CANVAS_HEIGHT / 2 - 104, 372, 212, 28, 28);
+        gc.setStroke(Color.color(1, 1, 1, 0.15));
+        gc.strokeRoundRect(CANVAS_WIDTH / 2 - 186, CANVAS_HEIGHT / 2 - 104, 372, 212, 28, 28);
+
+        gc.setTextAlign(TextAlignment.CENTER);
+        gc.setFill(theme.getWarning());
+        gc.setFont(TITLE_FONT);
+        gc.fillText("RUN OVER", CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 - 30);
+
+        gc.setFill(Color.WHITE);
+        gc.setFont(SUBTITLE_FONT);
+        gc.fillText("score  " + score + "    combo  " + combo, CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 + 12);
+        gc.fillText("R to replay    ENTER for menu", CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 + 52);
+        gc.setTextAlign(TextAlignment.LEFT);
     }
 
     private void drawSongPreview(GraphicsContext gc, int rowIndex, String label, String value, String detail,
                                  double x, double y, double width, double height, GameTheme theme) {
+        double previewX = 612;
+        double previewY = 216;
+        double previewWidth = 250;
+        double previewHeight = 286;
 
+        gc.setFill(Color.color(1, 1, 1, 0.05));
+        gc.fillRoundRect(previewX, previewY, previewWidth, previewHeight, 24, 24);
+
+        int laneCount = Math.min(4, previewProfile.getKeys().size());
+
+        for (int i = 0; i < laneCount; i++) {
+            double laneX = previewX + 22 + i * 52;
+            gc.setFill(song.getTheme().laneColor(i).deriveColor(0, 1, 1, 0.26));
+            gc.fillRoundRect(laneX, previewY + 18, 40, previewHeight - 36, 16, 16);
+        }
+
+        int previewNotes = Math.min(12, song.getChart().size());
+        for (int i = 0; i < previewNotes; i++) {
+            ChartNote note = song.getChart().get(i);
+            int lane = Math.floorMod(note.getLaneSeed(), laneCount);
+            double x = previewX + 28 + lane * 52;
+            double y = previewY + 36 + i * 16;
+            gc.setFill(song.getTheme().laneColor(lane));
+            gc.fillRoundRect(x, y, 28, note.isHold() ? 42 : 16, 10, 10);
+        }
+
+        gc.setStroke(song.getTheme().getGlow());
+        gc.setLineWidth(4);
+        gc.strokeLine(previewX + 16, previewY + previewHeight - 34,
+                previewX + previewWidth - 16, previewY + previewHeight - 34);
+    }
+
+    private void drawLanes(GraphicsContext gc) {
+        double pulse = 0.6 + 0.4 * Math.sin(pulseTime * 2.8) {
+            Color laneColor = currentTheme().laneColor(i);
+
+            gc.setFill(laneColor.deriveColor(0, 1, 1.1, 0.3));
+            gc.fillRoundRect(x, 34, NOTE_WIDTH, CANVAS_HEIGHT - 68, 18, 18);
+
+            gc.setStroke(Color.color(1, 1, 1, 0.12));
+            gc.strokeRoundRect(x, 34, NOTE_WIDTH, CANVAS_HEIGHT - 68, 18, 18);
+
+            gc.setFill(laneColor.deriveColor(0, 1, 1, 0.22 + 0.14 * pulse));
+            gc.fillRoundRect(x + 6, 48, NOTE_WIDTH - 12, 18, 10, 10);
+
+            gc.setTextAlign(TextAlignment.CENTER);
+            gc.setFill(Color.WHITE);
+            gc.setFont(KEY_FONT);
+            gc.fillText(activeProfile.getKeys().get(i).getName(), x + NOTE_WIDTH / 2, LANE_Y - 18);
+        }
+        gc.setTextAlign(TextAlignment.LEFT);
     }
 
 
