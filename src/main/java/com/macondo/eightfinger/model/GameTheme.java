@@ -32,7 +32,7 @@ public class GameTheme {
     }
 
     public String getTitle() { return title; }
-    public Color getBackroundTop() { return backgroundTop; }
+    public Color getBackgroundTop() { return backgroundTop; }
     public Color getBackgroundMid() { return backgroundMid; }
     public Color getBackgroundBottom() { return backgroundBottom; }
     public Color getAccent() { return accent; }

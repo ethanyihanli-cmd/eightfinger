@@ -9,7 +9,6 @@ import java.util.List;
 
 public class SongLibrary {
     private SongLibrary() {
-        //work after
     }
 
     public static List<Song> builtInSongs() {
@@ -21,7 +20,7 @@ public class SongLibrary {
     }
 
     private static Song buildJustTheTwoOfUs() {
-        List<ChartNote> chart = newArrayList<>();
+        List<ChartNote> chart = new ArrayList<>();
 
         addPhrase(chart, 0, new int[]{0, 1, 2, 1, 3, 2, 1, 0});
         addPhrase(chart, 8, new int[]{0, 2, 1, 3, 2, 1, 0, 1});
@@ -71,7 +70,7 @@ public class SongLibrary {
                 GameTheme.glacier(),
                 108,
                 16,
-                "music/in-the-shadow-of-the-sun.mp4"
+                "music/in-the-shadow-of-the-sun.mp4",
                 235,
                 chart,
                 new int[]{123, 185, 247, 185},

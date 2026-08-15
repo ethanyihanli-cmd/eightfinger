@@ -33,6 +33,11 @@
             <version>${javafx.version}</version>
         </dependency>
         <dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-fxml</artifactId>
+            <version>${javafx.version}</version>
+        </dependency>
+        <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>
             <version>5.12.1</version>
@@ -56,7 +61,7 @@
                 <artifactId>javafx-maven-plugin</artifactId>
                 <version>0.0.8</version>
                     <configuration>
-                        <mainClass>com.macondo.eightfinger.launcher</mainClass>
+                        <mainClass>com.macondo.eightfinger.Launcher</mainClass>
                     </configuration>
             </plugin>
         </plugins>

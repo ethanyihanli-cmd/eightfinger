@@ -32,7 +32,7 @@ public class ChartTransformer {
             }
 
             int mappedLane = mapLane(note.getLaneSeed(), sourceLaneCount, targetLaneCount, i);
-            result.add(new ChartNote(note.getBeat(), mappedLane, note.getHoldBeats()));
+            adapted.add(new ChartNote(note.getBeat(), mappedLane, note.getHoldBeats()));
         }
 
         if (profile.getLevel() >= 4) {
@@ -43,8 +43,8 @@ public class ChartTransformer {
             addGapFills(adapted, targetLaneCount);
         }
 
-        result.sort(Comparator.comparingDouble(ChartNote::getBeat));
-        return result;
+        adapted.sort(Comparator.comparingDouble(ChartNote::getBeat));
+        return adapted;
     }
 
     private static List<ChartNote> expandToDuration(Song song) {

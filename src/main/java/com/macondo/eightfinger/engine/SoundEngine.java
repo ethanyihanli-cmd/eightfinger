@@ -13,6 +13,7 @@ import javax.sound.sampled.SourceDataLine;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.net.URL;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -20,11 +21,13 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 
 public class SoundEngine {
+    private static final float SAMPLE_RATE = 44100;
+
     private ExecutorService effectsWorker;
     private AtomicBoolean backingTrackRunning;
     private boolean enabled;
-    private Thread backTrackThread;
-    private MediaPlayer mediaPlayer;
+    private Thread backingTrackThread;
+    private MediaPlayer backingPlayer;
     private MediaView mediaView;
     private boolean videoBackgroundActive;
 
@@ -66,6 +69,13 @@ public class SoundEngine {
         playTone(220, 120, 0.18);
     }
 
+    private void playTone(int hz, int millis, double volume) {
+        if (!enabled) {
+            return;
+        }
+        effectsWorker.submit(() -> emitTone(hz, millis, volume));
+    }
+
     public void startBackingTrack(Song song) {
         stopBackingTrack();
 
@@ -80,7 +90,7 @@ public class SoundEngine {
         thread.start();
     }
 
-    public void attachedMediaView(MediaView mediaView) {
+    public void attachMediaView(MediaView mediaView) {
         this.mediaView = mediaView;
         if (mediaView != null) {
             mediaView.setPreserveRatio(false);
@@ -118,12 +128,24 @@ public class SoundEngine {
     }
 
     private void runBackingTrack(Song song) {
+        if (tryStartMedia(song)) {
+            while (enabled && backingTrackRunning.get() && !Thread.currentThread().isInterrupted()) {
+                try {
+                    Thread.sleep(250);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    break;
+                }
+            }
+            return;
+        }
+
         long stepMillis = Math.max(110, Math.round(song.secondsPerBeat() * 1000));
         int step = 0;
 
         while (enabled && backingTrackRunning.get() && !Thread.currentThread().isInterrupted()) {
             int bass = song.bassAt(step / 2);
-            int step = 0;
+            int lead = song.leadAt(step);
 
             emitTone(bass, (int) Math.min(220, stepMillis), 0.09);
             if (step % 2 == 0) {
@@ -158,16 +180,24 @@ public class SoundEngine {
             path = Paths.get("").resolve(path).normalize();
         }
 
-        if (!Files.exists(path)) {
-            return false;
+        String mediaUri;
+        if (Files.exists(path)) {
+            mediaUri = path.toUri().toString();
+        } else {
+            URL resource = SoundEngine.class.getResource("/com/macondo/eightfinger/" + song.getMediaPath());
+            if (resource == null) {
+                resource = SoundEngine.class.getResource("/" + song.getMediaPath());
+            }
+            if (resource == null) {
+                return false;
+            }
+            mediaUri = resource.toString();
         }
-
-        Path mediaPath = path;
 
         Runnable startMedia = () -> {
             try {
-                MediaPlayer player = new MediaPlayer(new Media(mediaPath.toUri().toString()));
-                MediaView curentMediaView = mediaView;
+                MediaPlayer player = new MediaPlayer(new Media(mediaUri));
+                MediaView currentMediaView = mediaView;
                 videoBackgroundActive = song.hasVideoBackground() && currentMediaView != null;
 
                 player.setOnEndOfMedia(() -> {
@@ -188,7 +218,7 @@ public class SoundEngine {
             } catch (Exception ignored) {
                 MediaPlayer player = backingPlayer;
                 backingPlayer = null;
-                videoBackGroundActive = false;
+                videoBackgroundActive = false;
                 if (player != null) {
                     player.dispose();
                 }
@@ -231,7 +261,7 @@ public class SoundEngine {
 
         try {
             AudioFormat format = new AudioFormat(SAMPLE_RATE, 16, 1, true, false);
-            byte[] buffer = new byte [(int) (SAMPLE_RATE * millis / 10000) * 2];
+            byte[] buffer = new byte[(int) (SAMPLE_RATE * millis / 1000) * 2];
             for (int i = 0; i < buffer.length / 2; i++) {
                 double angle = (i / (SAMPLE_RATE / hz)) * 2.0 * Math.PI;
                 short sample = (short) (Math.sin(angle) * Short.MAX_VALUE * volume);

@@ -5,7 +5,6 @@ module com.macondo.eightfinger {
     requires java.desktop;
 
 
-    opens com.macondo.eightfinger to javafx.fxml;
     exports com.macondo.eightfinger;
     exports com.macondo.eightfinger.model;
     exports com.macondo.eightfinger.data;

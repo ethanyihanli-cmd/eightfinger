@@ -1,10 +1,15 @@
 package com.macondo.eightfinger;
 
 import com.macondo.eightfinger.data.SongLibrary;
-import com.macondo.eightfinger.model.Song;
 import com.macondo.eightfinger.engine.ChartTransformer;
 import com.macondo.eightfinger.engine.SoundEngine;
-import com.macondo.eightfinger.model.*;
+import com.macondo.eightfinger.model.ChartNote;
+import com.macondo.eightfinger.model.DifficultyProfile;
+import com.macondo.eightfinger.model.GameMode;
+import com.macondo.eightfinger.model.GameState;
+import com.macondo.eightfinger.model.GameTheme;
+import com.macondo.eightfinger.model.Judgement;
+import com.macondo.eightfinger.model.Song;
 import com.macondo.eightfinger.view.Note;
 import javafx.animation.AnimationTimer;
 import javafx.application.Application;
@@ -13,20 +18,17 @@ import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.input.KeyCode;
 import javafx.scene.media.MediaView;
+import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.scene.text.TextAlignment;
-import javafx.scene.control.Label;
-import javafx.scene.layout.StackPane;
-import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 
-import javax.print.attribute.HashDocAttributeSet;
 import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.Set;
-import java.util.List;
 import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
 
 public class EightFingerGame extends Application {
     private static final double CANVAS_WIDTH = 1120;
@@ -46,14 +48,13 @@ public class EightFingerGame extends Application {
     private static final Font PANEL_TEXT_FONT = Font.font("Verdana", FontWeight.NORMAL, 16);
     private static final Font MENU_FONT = Font.font("Verdana", FontWeight.NORMAL, 17);
     private static final Font KEY_FONT = Font.font("Verdana", FontWeight.BOLD, 18);
-    private static final Font MENU_FONT = Font.font("Verdana", FontWeight.NORMAL, 17);
+    private static final Font FEEDBACK_FONT = Font.font("Verdana", FontWeight.BOLD, 34);
 
     private GameState state = GameState.MENU;
     private int selectedSongIndex = 0;
     private int selectedDifficulty = 3;
     private int selectedModeIndex = 1;
     private int menuFieldIndex = 0;
-
 
     private List<Song> songs;
     private Song selectedSong;
@@ -79,7 +80,7 @@ public class EightFingerGame extends Application {
         this.songs = SongLibrary.builtInSongs();
         this.selectedSong = songs.get(0);
         this.activeProfile = DifficultyProfile.forLevel(selectedDifficulty);
-        this.activeMode = GameMode.values() [selectedModeIndex];
+        this.activeMode = GameMode.values()[selectedModeIndex];
         this.soundEngine = new SoundEngine();
         this.notes = new ArrayList<>();
         this.pressedKeys = new HashSet<>();
@@ -91,12 +92,12 @@ public class EightFingerGame extends Application {
         MediaView mediaView = new MediaView();
         mediaView.setFitWidth(VIDEO_PANEL_WIDTH);
         mediaView.setFitHeight(CANVAS_HEIGHT);
-        SoundEngine.attachMediaView(mediaView);
+        soundEngine.attachMediaView(mediaView);
 
         Canvas canvas = new Canvas(CANVAS_WIDTH, CANVAS_HEIGHT);
         GraphicsContext gc = canvas.getGraphicsContext2D();
 
-        StackPane root = new StackPane(mediaView, canvas);
+        javafx.scene.layout.StackPane root = new javafx.scene.layout.StackPane(mediaView, canvas);
         root.setFocusTraversable(true);
 
         Scene scene = new Scene(root);
@@ -134,13 +135,12 @@ public class EightFingerGame extends Application {
                     feedbackTimer = Math.max(0, feedbackTimer - delta);
                 }
 
-                if (state == GameState.PlAYING) {
+                if (state == GameState.PLAYING) {
                     updateGame(delta);
                 }
 
                 draw(gc);
             }
-
         };
 
         timer.start();
@@ -174,7 +174,8 @@ public class EightFingerGame extends Application {
                     changeMenuValue(1);
                 }
             }
-            default -> {}
+            default -> {
+            }
         }
     }
 
@@ -183,12 +184,8 @@ public class EightFingerGame extends Application {
             case 0 -> {
                 selectedSongIndex = Math.floorMod(selectedSongIndex + direction, songs.size());
                 selectedSong = songs.get(selectedSongIndex);
-                activeProfile = DifficultyProfile.forLevel(selectedDifficulty);
             }
-            case 1 -> {
-                selectedDifficulty = Math.max(1, Math.min(5, selectedDifficulty + direction));
-                activeProfile = DifficultyProfile.forLevel(selectedDifficulty);
-            }
+            case 1 -> selectedDifficulty = Math.max(1, Math.min(5, selectedDifficulty + direction));
             case 2 -> {
                 selectedModeIndex = Math.floorMod(selectedModeIndex + direction, GameMode.values().length);
                 activeMode = GameMode.values()[selectedModeIndex];
@@ -199,7 +196,8 @@ public class EightFingerGame extends Application {
                     return;
                 }
             }
-            default -> {}
+            default -> {
+            }
         }
         soundEngine.playMenuMove();
         activeProfile = DifficultyProfile.forLevel(selectedDifficulty);
@@ -208,17 +206,17 @@ public class EightFingerGame extends Application {
     private void handlePlayPress(KeyCode key) {
         if (key == KeyCode.R) {
             startRound();
-        } else if (key == KeyCode.ENTER || key == KeyCode.ESCAPE) {
+            return;
+        }
+        if (key == KeyCode.ENTER || key == KeyCode.ESCAPE) {
             state = GameState.MENU;
             notes.clear();
             pressedKeys.clear();
             soundEngine.stopBackingTrack();
             showFeedback("", Color.WHITE);
             soundEngine.playMenuMove();
+            return;
         }
-    }
-
-    private void handlePlayPress(KeyCode key) {
         if (!activeProfile.getKeys().contains(key)) {
             return;
         }
@@ -230,11 +228,6 @@ public class EightFingerGame extends Application {
         }
 
         Judgement judgement = judge(note);
-        if (note == null) {
-            registerMiss(Judgement.MISS);
-            return;
-        }
-
         score += judgement.getPoints() + combo / 4;
         combo++;
         showFeedback(judgement.getLabel(), judgement.getColor());
@@ -244,6 +237,17 @@ public class EightFingerGame extends Application {
             note.setActiveHold(true);
         } else {
             notes.remove(note);
+        }
+    }
+
+    private void handleGameOverInput(KeyCode key) {
+        if (key == KeyCode.R) {
+            startRound();
+        } else if (key == KeyCode.ENTER || key == KeyCode.ESCAPE) {
+            state = GameState.MENU;
+            notes.clear();
+            pressedKeys.clear();
+            soundEngine.playMenuMove();
         }
     }
 
@@ -285,10 +289,10 @@ public class EightFingerGame extends Application {
         songTime += delta;
         spawnChartNotes();
 
-        Iterator<Note> iterator = notes.iterators();
+        Iterator<Note> iterator = notes.iterator();
         while (iterator.hasNext()) {
             Note note = iterator.next();
-            note.move(avtiveProfile.getNoteSpeed() * delta);
+            note.move(activeProfile.getNoteSpeed() * delta);
 
             if (note.isActiveHold()) {
                 if (!pressedKeys.contains(note.getKey())) {
@@ -336,7 +340,6 @@ public class EightFingerGame extends Application {
 
             notes.add(new Note(-26, key, chartNote.isHold(), holdHeight));
             nextChartIndex++;
-
         }
     }
 
@@ -358,7 +361,7 @@ public class EightFingerGame extends Application {
         return null;
     }
 
-    private Judgement judge (Note note) {
+    private Judgement judge(Note note) {
         double distance = Math.abs(note.getHeadCenterY() - LANE_Y);
         if (distance <= 9) {
             return Judgement.PERFECT;
@@ -377,6 +380,7 @@ public class EightFingerGame extends Application {
 
     private void rewardHold() {
         score += Judgement.HOLD.getPoints() + combo / 5;
+        combo++;
         showFeedback(Judgement.HOLD.getLabel(), Judgement.HOLD.getColor());
         soundEngine.playJudgement(Judgement.HOLD);
     }
@@ -408,7 +412,7 @@ public class EightFingerGame extends Application {
     private void showFeedback(String text, Color color) {
         feedbackText = text;
         feedbackColor = color;
-        feedbackTimer = 0.7;
+        feedbackTimer = text.isBlank() ? 0 : 0.7;
     }
 
     private GameTheme currentTheme() {
@@ -461,51 +465,49 @@ public class EightFingerGame extends Application {
         }
     }
 
-    //work later
-
     private void drawBackground(GraphicsContext gc) {
-      GameTheme theme = currentTheme();
+        GameTheme theme = currentTheme();
 
-      Color top = theme.getBackgroundTop();
-      Color mid = theme.getBackgroundMid();
-      Color bottom = theme.getBackgroundBottom();
+        Color top = theme.getBackgroundTop();
+        Color mid = theme.getBackgroundMid();
+        Color bottom = theme.getBackgroundBottom();
 
-      for (int i = 0; i < CANVAS_HEIGHT; i++) {
-          double progress = (double) i / CANVAS_HEIGHT;
-          Color color;
-          if (progress < 0.5) {
-              double t = progress / 0.5;
-              color = top.interpolate(mid, t);
-          } else {
-              double t = (progress - 0.5) / 0.5;
-              color = mid.interpolate(bottom, t);
-          }
-          gc.setFill(color);
-          gc.fillRect(0, i, CANVAS_WIDTH, 1);
-      }
+        for (int i = 0; i < CANVAS_HEIGHT; i++) {
+            double progress = (double) i / CANVAS_HEIGHT;
+            Color color;
+            if (progress < 0.5) {
+                double t = progress / 0.5;
+                color = top.interpolate(mid, t);
+            } else {
+                double t = (progress - 0.5) / 0.5;
+                color = mid.interpolate(bottom, t);
+            }
+            gc.setFill(color);
+            gc.fillRect(0, i, CANVAS_WIDTH, 1);
+        }
 
-      if (soundEngine.hasActiveVideoBackground()) {
-          double panelX = playfieldWidth() + 18;
-          double panelWidth = CANVAS_WIDTH - panelX - 18;
-          gc.setGlobalAlpha(0.26);
-          gc.setFill(theme.getBackgroundMid());
-          gc.fillRect(playfieldWidth(), 0, CANVAS_WIDTH - playfieldWidth(), CANVAS_HEIGHT);
-          gc.setGlobalAlpha(1);
+        if (soundEngine.hasActiveVideoBackground()) {
+            double panelX = playfieldWidth() + 18;
+            double panelWidth = CANVAS_WIDTH - panelX - 18;
+            gc.setGlobalAlpha(0.26);
+            gc.setFill(theme.getBackgroundMid());
+            gc.fillRect(playfieldWidth(), 0, CANVAS_WIDTH - playfieldWidth(), CANVAS_HEIGHT);
+            gc.setGlobalAlpha(1);
 
-          gc.setFill(Color.color(0.02, 0.05, 0.08, 0.14));
-          gc.fillRoundRect(panelX, 22, panelWidth, CANVAS_HEIGHT - 44, 28, 28);
-          gc.setStroke(theme.getGlow().deriveColor(0, 1, 1, 0.55));
-          gc.strokeRoundRect(panelX, 22, panelWidth, CANVAS_HEIGHT - 44, 28, 28);
-      }
+            gc.setFill(Color.color(0.02, 0.05, 0.08, 0.14));
+            gc.fillRoundRect(panelX, 22, panelWidth, CANVAS_HEIGHT - 44, 28, 28);
+            gc.setStroke(theme.getGlow().deriveColor(0, 1, 1, 0.55));
+            gc.strokeRoundRect(panelX, 22, panelWidth, CANVAS_HEIGHT - 44, 28, 28);
+        }
 
-      gc.setGlobalAlpha(0.18);
-      gc.setFill(theme.getAccent());
-      gc.fillOval(-120, -90, 340, 220);
-      gc.setFill(theme.getGlow());
-      gc.fillOval(CANVAS_WIDTH - 240, 32, 320, 240);
-      gc.setFill(theme.laneColor(3));
-      gc.fillOval(110, CANVAS_HEIGHT - 160, 420, 210);
-      gc.setGlobalAlpha(1);
+        gc.setGlobalAlpha(0.18);
+        gc.setFill(theme.getAccent());
+        gc.fillOval(-120, -90, 340, 220);
+        gc.setFill(theme.getGlow());
+        gc.fillOval(CANVAS_WIDTH - 240, 32, 320, 240);
+        gc.setFill(theme.laneColor(3));
+        gc.fillOval(110, CANVAS_HEIGHT - 160, 420, 210);
+        gc.setGlobalAlpha(1);
     }
 
     private void drawMenu(GraphicsContext gc) {
@@ -519,7 +521,7 @@ public class EightFingerGame extends Application {
         gc.setFill(theme.getPanel());
         gc.fillRoundRect(92, 78, CANVAS_WIDTH - 184, CANVAS_HEIGHT - 144, 28, 28);
         gc.setStroke(Color.color(1, 1, 1, 0.12));
-        gc.strokeRoundRect(92, 78, CANVAS_WIDTH - 184, CANVAS_HEIGHT - 144, 28, 28;
+        gc.strokeRoundRect(92, 78, CANVAS_WIDTH - 184, CANVAS_HEIGHT - 144, 28, 28);
 
         gc.setFill(theme.getAccent());
         gc.setFont(TITLE_FONT);
@@ -540,11 +542,11 @@ public class EightFingerGame extends Application {
                 leftPanelX, leftPanelY, leftPanelWidth, rowHeight, theme);
 
         drawMenuRow(gc, 1, "DIFFICULTY", String.valueOf(selectedDifficulty),
-                "lanes " + previewProfile.getKeys().size() + "    bpm" + (int) selectedSong.getBpm(),
+                "lanes " + previewProfile.getKeys().size() + "    bpm " + (int) selectedSong.getBpm(),
                 leftPanelX, leftPanelY + (rowHeight + rowGap), leftPanelWidth, rowHeight, theme);
 
         drawMenuRow(gc, 2, "MODE", previewMode.getLabel(),
-                previewMode.getDescription() + "    sound" + (soundEngine.isEnabled() ? "on" : "off"),
+                previewMode.getDescription() + "    sound " + (soundEngine.isEnabled() ? "on" : "off"),
                 leftPanelX, leftPanelY + (rowHeight + rowGap) * 2, leftPanelWidth, rowHeight, theme);
 
         drawMenuRow(gc, 3, "START", "Play",
@@ -559,7 +561,7 @@ public class EightFingerGame extends Application {
         drawSongPreview(gc, selectedSong, previewProfile);
     }
 
-    private void drawMenuRow(GraphicsContext gc, int rowIndex, String label String value, String detail,
+    private void drawMenuRow(GraphicsContext gc, int rowIndex, String label, String value, String detail,
                              double x, double y, double width, double height, GameTheme theme) {
         boolean selected = menuFieldIndex == rowIndex;
 
@@ -582,7 +584,26 @@ public class EightFingerGame extends Application {
     }
 
     private void drawLanes(GraphicsContext gc) {
+        double pulse = 0.6 + 0.4 * Math.sin(pulseTime * 2.8);
+        for (int i = 0; i < activeProfile.getKeys().size(); i++) {
+            double x = laneX(i);
+            Color laneColor = currentTheme().laneColor(i);
 
+            gc.setFill(laneColor.deriveColor(0, 1, 1.1, 0.3));
+            gc.fillRoundRect(x, 34, NOTE_WIDTH, CANVAS_HEIGHT - 68, 18, 18);
+
+            gc.setStroke(Color.color(1, 1, 1, 0.12));
+            gc.strokeRoundRect(x, 34, NOTE_WIDTH, CANVAS_HEIGHT - 68, 18, 18);
+
+            gc.setFill(laneColor.deriveColor(0, 1, 1, 0.22 + 0.14 * pulse));
+            gc.fillRoundRect(x + 6, 48, NOTE_WIDTH - 12, 18, 10, 10);
+
+            gc.setTextAlign(TextAlignment.CENTER);
+            gc.setFill(Color.WHITE);
+            gc.setFont(KEY_FONT);
+            gc.fillText(activeProfile.getKeys().get(i).getName(), x + NOTE_WIDTH / 2, LANE_Y - 18);
+        }
+        gc.setTextAlign(TextAlignment.LEFT);
     }
 
     private void drawHitLine(GraphicsContext gc) {
@@ -592,13 +613,14 @@ public class EightFingerGame extends Application {
         gc.setStroke(Color.color(1, 1, 1, 0.18));
         gc.strokeLine(84, LANE_Y + 10, playfieldWidth() - 84, LANE_Y + 10);
 
-        gc.getStroke(theme.getGlow().deriveColor(0, 1, 1, 0.35 + 0.35 * glow));
+        gc.setStroke(theme.getGlow().deriveColor(0, 1, 1, 0.35 + 0.35 * glow));
         gc.setLineWidth(8);
         gc.strokeLine(84, LANE_Y, playfieldWidth() - 84, LANE_Y);
 
         gc.setStroke(Color.WHITE);
         gc.setLineWidth(2);
         gc.strokeLine(84, LANE_Y, playfieldWidth() - 84, LANE_Y);
+        gc.setLineWidth(1);
     }
 
     private void drawNotes(GraphicsContext gc) {
@@ -614,16 +636,16 @@ public class EightFingerGame extends Application {
             if (note.isHold()) {
                 double bodyHeight = Math.max(0, note.getTotalHeight() - 26);
                 gc.setFill(laneColor.deriveColor(0, 1, 1, note.isActiveHold() ? 0.55 : 0.3));
-                gc.fillRoundRect(x + 16, note.getY() + 26 - 4, NOTE_WIDTH - 32, bodyHeight + 8, 12, 12);
+                gc.fillRoundRect(x + 16, note.getY() + 22, NOTE_WIDTH - 32, bodyHeight + 8, 12, 12);
             }
 
             gc.setFill(laneColor.deriveColor(0, 1, 1.25, 0.18));
-            gc.fillRoundRect(x - 4, note.getY() - 5, NOTE_WIDTH + 8, 26 + 10, 16, 16);
+            gc.fillRoundRect(x - 4, note.getY() - 5, NOTE_WIDTH + 8, 36, 16, 16);
 
             gc.setFill(laneColor.brighter());
             gc.fillRoundRect(x, note.getY(), NOTE_WIDTH, 26, 14, 14);
             gc.setStroke(Color.color(1, 1, 1, 0.42));
-            gc.strokeRoundRect(x, note.getY(), NOTE_WIDTH, 26, 14,14);
+            gc.strokeRoundRect(x, note.getY(), NOTE_WIDTH, 26, 14, 14);
         }
     }
 
@@ -647,7 +669,7 @@ public class EightFingerGame extends Application {
         gc.fillText("combo  " + combo, 42, 114);
         gc.fillText("mode  " + activeMode.getLabel(), 42, 138);
         gc.fillText("miss  " + misses + "/" + (activeMode == GameMode.PRACTICE ? "INF" : String.valueOf(activeMode.getMissLimit())), 42, 162);
-        gc.fillText(selectedSong.getArtist().isBlank() ? selectedSong.getCaption() : "artist " + selectedSong.getArtist(), 42, 186);
+        gc.fillText(selectedSong.getArtist().isBlank() ? selectedSong.getCaption() : "artist  " + selectedSong.getArtist(), 42, 186);
     }
 
     private void drawGameOver(GraphicsContext gc) {
@@ -670,8 +692,7 @@ public class EightFingerGame extends Application {
         gc.setTextAlign(TextAlignment.LEFT);
     }
 
-    private void drawSongPreview(GraphicsContext gc, int rowIndex, String label, String value, String detail,
-                                 double x, double y, double width, double height, GameTheme theme) {
+    private void drawSongPreview(GraphicsContext gc, Song song, DifficultyProfile previewProfile) {
         double previewX = 612;
         double previewY = 216;
         double previewWidth = 250;
@@ -683,9 +704,9 @@ public class EightFingerGame extends Application {
         int laneCount = Math.min(4, previewProfile.getKeys().size());
 
         for (int i = 0; i < laneCount; i++) {
-            double laneX = previewX + 22 + i * 52;
+            double x = previewX + 22 + i * 52;
             gc.setFill(song.getTheme().laneColor(i).deriveColor(0, 1, 1, 0.26));
-            gc.fillRoundRect(laneX, previewY + 18, 40, previewHeight - 36, 16, 16);
+            gc.fillRoundRect(x, previewY + 18, 40, previewHeight - 36, 16, 16);
         }
 
         int previewNotes = Math.min(12, song.getChart().size());
@@ -702,29 +723,8 @@ public class EightFingerGame extends Application {
         gc.setLineWidth(4);
         gc.strokeLine(previewX + 16, previewY + previewHeight - 34,
                 previewX + previewWidth - 16, previewY + previewHeight - 34);
+        gc.setLineWidth(1);
     }
-
-    private void drawLanes(GraphicsContext gc) {
-        double pulse = 0.6 + 0.4 * Math.sin(pulseTime * 2.8) {
-            Color laneColor = currentTheme().laneColor(i);
-
-            gc.setFill(laneColor.deriveColor(0, 1, 1.1, 0.3));
-            gc.fillRoundRect(x, 34, NOTE_WIDTH, CANVAS_HEIGHT - 68, 18, 18);
-
-            gc.setStroke(Color.color(1, 1, 1, 0.12));
-            gc.strokeRoundRect(x, 34, NOTE_WIDTH, CANVAS_HEIGHT - 68, 18, 18);
-
-            gc.setFill(laneColor.deriveColor(0, 1, 1, 0.22 + 0.14 * pulse));
-            gc.fillRoundRect(x + 6, 48, NOTE_WIDTH - 12, 18, 10, 10);
-
-            gc.setTextAlign(TextAlignment.CENTER);
-            gc.setFill(Color.WHITE);
-            gc.setFont(KEY_FONT);
-            gc.fillText(activeProfile.getKeys().get(i).getName(), x + NOTE_WIDTH / 2, LANE_Y - 18);
-        }
-        gc.setTextAlign(TextAlignment.LEFT);
-    }
-
 
     @Override
     public void stop() {
@@ -733,10 +733,7 @@ public class EightFingerGame extends Application {
         }
     }
 
-
     public static void main(String[] args) {
         launch(args);
     }
-
-
 }

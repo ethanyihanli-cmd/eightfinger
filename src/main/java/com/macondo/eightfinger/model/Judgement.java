@@ -18,7 +18,7 @@ public enum Judgement {
     private int points;
     private int toneHz;
 
-    Judgement(String label, Color color int points, int toneHz) {
+    Judgement(String label, Color color, int points, int toneHz) {
         this.label = label;
         this.color = color;
         this.points = points;
