@@ -265,6 +265,8 @@ public class EightFingerGame extends Application {
         activeMode = GameMode.values()[selectedModeIndex];
         activeChart = ChartTransformer.forDifficulty(selectedSong, activeProfile);
 
+        System.out.println("Level " + selectedDifficulty + " - " + activeChart.size() + " notes");
+
         state = GameState.PLAYING;
         notes.clear();
         pressedKeys.clear();
@@ -394,9 +396,12 @@ public class EightFingerGame extends Application {
         showFeedback(judgement.getLabel(), judgement.getColor());
         soundEngine.playMiss();
 
+        System.out.println("Miss ! Total misses: " + misses + " / " + activeMode.getMissLimit());
+
         if (misses >= activeMode.getMissLimit()) {
             soundEngine.stopBackingTrack();
             state = GameState.GAME_OVER;
+            showFeedback("GAME OVER", currentTheme().getWarning());
         }
     }
 

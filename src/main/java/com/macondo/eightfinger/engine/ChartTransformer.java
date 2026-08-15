@@ -10,25 +10,29 @@ import java.util.List;
 
 
 public class ChartTransformer {
-    private ChartTransformer() {
-    }
 
     public static List<ChartNote> forDifficulty(Song song, DifficultyProfile profile) {
-        List<ChartNote> chart = expandToDuration(song);
+        List<ChartNote> baseChart = song.getChart();
+
+        if (baseChart.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        List<ChartNote> expanded = expandToDuration(song);
 
         List<ChartNote> adapted = new ArrayList<>();
         int sourceLaneCount = 4;
         int targetLaneCount = profile.getKeys().size();
 
-        for ( int i = 0; i < chart.size(); i++) {
-            ChartNote note = chart.get(i);
+        for ( int i = 0; i < expanded.size(); i++) {
+            ChartNote note = expanded.get(i);
 
             if (!shouldKeep(note, i, profile.getLevel())) {
                 continue;
             }
 
             int mappedLane = mapLane(note.getLaneSeed(), sourceLaneCount, targetLaneCount, i);
-            adapted.add(new ChartNote(note.getBeat(), mappedLane, note.getHoldBeats()));
+            result.add(new ChartNote(note.getBeat(), mappedLane, note.getHoldBeats()));
         }
 
         if (profile.getLevel() >= 4) {
@@ -39,16 +43,12 @@ public class ChartTransformer {
             addGapFills(adapted, targetLaneCount);
         }
 
-        adapted.sort(Comparator.comparingDouble(ChartNote::getBeat));
-        return adapted;
+        result.sort(Comparator.comparingDouble(ChartNote::getBeat));
+        return result;
     }
 
     private static List<ChartNote> expandToDuration(Song song) {
         List<ChartNote> baseChart = song.getChart();
-        if (baseChart.isEmpty()) {
-            return baseChart;
-        }
-
         double targetBeats = song.durationSeconds() / song.secondsPerBeat();
         double baseEndBeat = 0;
 
