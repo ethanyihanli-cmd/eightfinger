@@ -63,3 +63,6 @@ Gameplay:
 11. Add a menu so players can choose song, difficulty, and mode.
 
 In the Java version, the code is split into song data, models, chart transforming, sound, note view objects, and the main game loop. The HTML version keeps the same idea in one file so it is easier to open and share.
+
+
+<img width="1857" height="923" alt="Screenshot 2026-08-14 at 23-13-12 Eight Finger Challenge" src="https://github.com/user-attachments/assets/235f9dfc-6eab-42b1-bf1b-d5d8dfb0dfa9" />
